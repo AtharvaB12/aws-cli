@@ -1,0 +1,107 @@
+# configuration of aws-cli in virtual machine -
+
+aws configure
+
+# Give access key and secret key -
+
+AWS Access Key ID [None]: key
+AWS Secret Access Key [None]: key
+Default region name: us-west-1 
+Default output format [None]:
+
+
+# Launch aws instance by cli -
+
+aws ec2 run-instances --image-id ami-09d069a04349dc3cb \
+ --count 1 \
+ --instance-type t2.micro \
+ --key-name aws_key \
+ --security-group-ids  sg-0c1ef98d1c91b2637 \
+ --placement AvailabilityZone=us-east-1a \
+ ---block-device-mappings DeviceName=/dev/xvda,Ebs={VolumeSize=10}
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+# create a security group for aws by cli-
+
+aws ec2 create-security-group --group-name new_sec_group --description "Default Security Group" --vpc-id vpc-9c5726f9
+
+# Add rules to security group -
+
+aws ec2 authorize-security-group-ingress --group-name new_sec_group --protocol tcp --port 22 --cidr 0.0.0.0/0
+
+-----------------------------------------------------------------------------------------------------------------
+
+# command for access s3 by cli
+
+1. check list of bucket  - 
+
+aws s3 ls
+
+2. Create a new bucket in s3
+
+aws s3 mb s3://new_bucket --region us-west-1
+
+3. Copy file to the s3 bucket 
+
+aws s3 cp task.txt s3://new_bucket/task.txt
+
+4. Move file to the s3 bucket
+
+aws s3 mv task.txt s3://new_bucket/task.txt
+
+5. Remove s3 bucker
+
+aws s3 rb s3://new_bucket
+
+6. Remove file in the bucket
+
+aws s3 rm s3://new_bucket/task.txt
+
+7. sync to s3 bucket
+
+aws s3 sync . s3://new_bucket 
+
+-----------------------------------------------------------------------------------------------------------------------
+
+
+# Create a iam - role for s3 by cli - Role is used when we dont have access key and secret key
+
+# make a json file for s3 role 
+
+json-file
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "s3:*"
+            ],
+            "Effect": "Allow",
+            "Resource": "*"
+        }
+    ]
+}
+
+
+# command for create role
+
+aws iam create-role --role-name s3_role --assume-role-policy-document file://aws_policy.json
+
+# attach role policy
+
+aws iam  attach-role-policy  --role-name s3_role  --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+
+# create instance profile
+
+aws iam create-instance-profile  --instance-profile-name  s3_role-Profile
+
+# Add-role-to-instance-profile
+
+aws  iam  add-role-to-instance-profile  --role-name new_role  --instance-profile-name  new_role-Profile
+
+# Associate iam-instance-profile  with ec2 instance
+
+aws ec2  associate-iam-instance-profile  --instance-id  InstanceId  --iam-instance-profile  Name=new_role-profile
