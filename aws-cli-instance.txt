@@ -68,40 +68,51 @@ aws s3 sync . s3://new_bucket
 
 # Create a iam - role for s3 by cli - Role is used when we dont have access key and secret key
 
-# make a json file for s3 role 
+# make a json file for role-policy 
 
 json-file
 
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Action": [
-                "s3:*"
-            ],
-            "Effect": "Allow",
-            "Resource": "*"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "ec2.amazonaws.com"},
+      "Action": "sts:AssumeRole"
+    }
+  ]
 }
 
 
 # command for create role
 
-aws iam create-role --role-name s3_role --assume-role-policy-document file://aws_policy.json
+aws iam create-role --role-name s3access --assume-role-policy-document file://ec2-role-policy.json
 
-# attach role policy
+# create a access role-policy of s3
 
-aws iam  attach-role-policy  --role-name s3_role  --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
+      "Resource": ["*"]
+    }
+  ]
+}
 
-# create instance profile
+# Attach the access policy to the role
 
-aws iam create-instance-profile  --instance-profile-name  s3_role-Profile
+aws iam put-role-policy --role-name s3access --policy-name S3-Permissions --policy-document file://ec2-access-s3.json
 
-# Add-role-to-instance-profile
+# Create an instnace profile
 
-aws  iam  add-role-to-instance-profile  --role-name new_role  --instance-profile-name  new_role-Profile
+aws iam create-instance-profile --instance-profile-name s3access-profile
 
-# Associate iam-instance-profile  with ec2 instance
+# Add the s3access role to the s3access-profile
 
-aws ec2  associate-iam-instance-profile  --instance-id  InstanceId  --iam-instance-profile  Name=new_role-profile
+aws iam add-role-to-instance-profile --instance-profile-name s3access-profile --role-name s3access
+
+# Attach to instance when created
+
+aws ec2 run-instances --image-id ami-id --iam-instance-profile Name="s3access-profile" --key-name my-key-pair --security-groups my-security-group --subnet-id subnet-id
