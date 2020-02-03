@@ -51,7 +51,7 @@ aws s3 cp task.txt s3://new_bucket/task.txt
 
 aws s3 mv task.txt s3://new_bucket/task.txt
 
-5. Remove s3 bucker
+5. Remove s3 bucket
 
 aws s3 rb s3://new_bucket
 
